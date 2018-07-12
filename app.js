@@ -14,6 +14,9 @@ const passport     = require("passport");
 const LocalStrategy= require("passport-local").Strategy;
 const User         = require("./models/user");
 const flash        = require("connect-flash");
+const FbStrategy   = require('passport-facebook').Strategy;
+const GoogleStrat  = require("passport-google-oauth").OAuth2Strategy;
+
 
 
 mongoose.Promise = Promise;
@@ -29,7 +32,6 @@ const app_name = require('./package.json').name;
 const debug = require('debug')(`${app_name}:${path.basename(__filename).split('.')[0]}`);
 
 const app = express();
-
 // Middleware Setup
 app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -48,7 +50,6 @@ app.use(require('node-sass-middleware')({
   dest: path.join(__dirname, 'public'),
   sourceMap: true
 }));
-      
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
@@ -67,6 +68,62 @@ passport.deserializeUser((id, cb) => {
 });
 
 app.use(flash());
+
+passport.use(new GoogleStrat({
+  clientID: process.env.GOCLIENT,
+  clientSecret: process.env.GOSECRET,
+  callbackURL: "/auth/google/callback"
+}, (accessToken, refreshToken, profile, done) => {
+  User.findOne({ googleID: profile.id }, (err, user) => {
+    if (err) {
+      return done(err);
+    }
+    if (user) {
+      return done(null, user);
+    }
+
+    const newUser = new User({
+      googleID: profile.id
+    });
+
+    newUser.save((err) => {
+      if (err) {
+        return done(err);
+      }
+      done(null, newUser);
+    });
+  });
+
+}));
+
+passport.use(new FbStrategy({
+  clientID: process.env.FBCLIENT,
+  clientSecret: process.env.FBCLIENT,
+  callbackURL: "/auth/facebook/callback"
+}, (accessToken, refreshToken, profile, done) => {
+  console.log('PROFILE ', profile, done); 
+  User.findOne({ facebookID: profile.id }, (err, user) => {
+    if (err) {
+      return done(err);
+    }
+    if (user) {
+      return done(null, user);
+    }
+
+    const newUser = new User({
+      facebookID: profile.id
+    });
+
+    newUser.save((err) => {
+      if (err) {
+        return done(err);
+      }
+      done(null, newUser);
+    });
+  });
+
+}));
+
 passport.use(new LocalStrategy({
   passReqToCallback: true
   },(req, username, password, next) => {

@@ -12,6 +12,30 @@ const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const bcryptSalt = 10;
 
+// FACEBOOK LOGIN
+
+authRoutes.get("/auth/facebook", passport.authenticate("facebook"));
+authRoutes.get("/auth/facebook/callback", passport.authenticate("facebook", {
+  successRedirect: "/private-page",
+  failureRedirect: "/"
+}));
+
+// END FACEBOOK LOGIN
+
+// GOOGLE LOGIN
+
+authRoutes.get("/auth/google", passport.authenticate("google", {
+    scope: ["https://www.googleapis.com/auth/plus.login",
+            "https://www.googleapis.com/auth/plus.profile.emails.read"]
+  }));
+  
+  authRoutes.get("/auth/google/callback", passport.authenticate("google", {
+    failureRedirect: "/",
+    successRedirect: "/private-page"
+  }));
+
+// GOOGLE LOGIN
+
 authRoutes.get("/logout", (req, res) => {
     req.logout();
     res.redirect("/login");
